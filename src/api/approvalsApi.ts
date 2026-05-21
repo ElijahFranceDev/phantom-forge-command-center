@@ -1,6 +1,8 @@
 import type { Approval } from "../types";
 
-const API_URL = "http://localhost:4000/api";
+const API_URL =
+  import.meta.env.VITE_API_URL ||
+  "https://phantom-forge-command-center-api.onrender.com/api";
 
 export async function getApprovals() {
   const response = await fetch(`${API_URL}/approvals`);

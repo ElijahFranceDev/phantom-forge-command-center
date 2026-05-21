@@ -1,6 +1,8 @@
 import type { UploadedFile } from "../types";
 
-const API_BASE_URL = "http://localhost:4000";
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL ||
+  "https://phantom-forge-command-center-api.onrender.com";
 
 type FilesProps = {
   uploadedFiles: UploadedFile[];

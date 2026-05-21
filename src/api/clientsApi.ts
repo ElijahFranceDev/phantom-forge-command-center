@@ -1,6 +1,8 @@
 import type { Client } from "../types";
 
-const API_URL = "http://localhost:4000/api";
+const API_URL =
+  import.meta.env.VITE_API_URL ||
+  "https://phantom-forge-command-center-api.onrender.com/api";
 
 type ApiClient = Omit<Client, "balance" | "depositDue"> & {
   balance: number;

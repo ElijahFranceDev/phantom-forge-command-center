@@ -400,7 +400,9 @@ function App() {
 
         {viewMode === "Admin" && !isClientOnlyMode && (
           <>
-            {activePage === "Dashboard" && <Dashboard clients={clients} />}
+            {activePage === "Dashboard" && (
+              <Dashboard clients={clients} approvals={approvals} />
+           )}
 
             {activePage === "Clients" && (
               <Clients

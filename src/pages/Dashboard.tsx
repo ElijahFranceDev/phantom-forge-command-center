@@ -1,50 +1,117 @@
-import StatCard from "../components/StatCard";
-import type { Client } from "../types";
+import type { Approval, Client } from "../types";
 
 type DashboardProps = {
   clients: Client[];
+  approvals: Approval[];
 };
 
-function Dashboard({ clients }: DashboardProps) {
-  const unpaidTotal = clients.reduce((total, client) => {
-    const numberOnly = Number(client.balance.replace(/[^0-9.-]+/g, ""));
-    return total + (Number.isNaN(numberOnly) ? 0 : numberOnly);
+const priorityItems = [
+  {
+    title: "Prepare first client discovery meeting",
+    subtitle: "Questions, scope notes, timeline, and quote prep",
+    priority: "High",
+  },
+  {
+    title: "Clean live dashboard data",
+    subtitle: "Remove demo numbers and make stats fully real",
+    priority: "High",
+  },
+  {
+    title: "Connect Square invoice link after quote",
+    subtitle: "Add the payment link once pricing is approved",
+    priority: "Medium",
+  },
+  {
+    title: "Add portal contract signing",
+    subtitle: "Build signed agreement flow after live version is stable",
+    priority: "Next",
+  },
+];
+
+function parseMoney(value: string) {
+  const cleanedValue = value.replace(/[^0-9.]/g, "");
+  const amount = Number(cleanedValue);
+
+  if (Number.isNaN(amount)) {
+    return 0;
+  }
+
+  return amount;
+}
+
+function Dashboard({ clients, approvals }: DashboardProps) {
+  const activeClients = clients.length;
+
+  const openProjects = clients.filter(
+    (client) =>
+      client.status !== "Completed" &&
+      client.status !== "Cancelled" &&
+      client.status !== "Archived"
+  ).length;
+
+  const unpaidBalance = clients.reduce((total, client) => {
+    const isPaid =
+      client.payment === "Paid In Full" ||
+      client.payment === "Deposit Paid" ||
+      client.payment === "Monthly Plan Active";
+
+    if (isPaid) {
+      return total;
+    }
+
+    return total + parseMoney(client.balance);
   }, 0);
+
+  const pendingApprovals = approvals.filter(
+    (approval) => approval.status !== "Approved"
+  ).length;
 
   return (
     <section className="page-section">
-      <div className="hero-card">
+      <div className="dashboard-hero">
         <p className="eyebrow">Today’s Focus</p>
-        <h3>Get the Client Portal ready for real payments.</h3>
+        <h2>Prepare Phantom Forge for discovery meetings and client onboarding.</h2>
         <p>
-          Start with project status, invoice/payment status, file requests,
-          revisions, and approvals. Square payment buttons can be added next.
+          Keep the portal clean, track client status, finalize scope after
+          meetings, and only add payment links once the quote is approved.
         </p>
       </div>
 
       <div className="stats-grid">
-        <StatCard label="Active Clients" value={String(clients.length)} />
-        <StatCard label="Open Projects" value="4" />
-        <StatCard label="Unpaid Balances" value={`$${unpaidTotal}`} />
-        <StatCard label="Pending Approvals" value="2" />
+        <StatTile label="Active Clients" value={activeClients.toString()} />
+        <StatTile label="Open Projects" value={openProjects.toString()} />
+        <StatTile label="Unpaid Balances" value={`$${unpaidBalance}`} />
+        <StatTile label="Pending Approvals" value={pendingApprovals.toString()} />
       </div>
 
-      <div className="content-grid">
-        <div className="panel">
+      <div className="dashboard-grid">
+        <div className="dashboard-panel">
           <div className="panel-header">
-            <h3>Client Pipeline</h3>
-            <span>Live overview</span>
+            <div>
+              <h3>Client Pipeline</h3>
+              <p>Live overview</p>
+            </div>
           </div>
 
-          <div className="client-list">
+          <div className="pipeline-list">
+            {clients.length === 0 && (
+              <div className="empty-state dashboard-empty">
+                <h4>No live clients yet.</h4>
+                <p>
+                  Add your first client after the discovery meeting to begin
+                  tracking project status, payment, agreement, and portal access.
+                </p>
+              </div>
+            )}
+
             {clients.map((client) => (
-              <div className="client-row" key={client.id}>
+              <div className="pipeline-card" key={client.id}>
                 <div>
-                  <h4>{client.name}</h4>
+                  <h4>{client.businessName}</h4>
                   <p>{client.packageName}</p>
                 </div>
 
-                <div className="client-meta">
+                <div className="pipeline-meta">
                   <span className="status-pill">{client.status}</span>
                   <strong>{client.balance}</strong>
                 </div>
@@ -53,17 +120,25 @@ function Dashboard({ clients }: DashboardProps) {
           </div>
         </div>
 
-        <div className="panel">
+        <div className="dashboard-panel">
           <div className="panel-header">
-            <h3>Priority Build List</h3>
-            <span>Internal</span>
+            <div>
+              <h3>Priority Build List</h3>
+              <p>Internal</p>
+            </div>
           </div>
 
-          <div className="task-list">
-            <TaskItem title="Build Client Portal MVP" tag="Urgent" />
-            <TaskItem title="Connect Square payment links" tag="High" />
-            <TaskItem title="Create invoice/payment status system" tag="High" />
-            <TaskItem title="Add client approval buttons" tag="Next" />
+          <div className="priority-list">
+            {priorityItems.map((item) => (
+              <div className="priority-card" key={item.title}>
+                <div>
+                  <h4>{item.title}</h4>
+                  <p>{item.subtitle}</p>
+                </div>
+
+                <span className="status-pill">{item.priority}</span>
+              </div>
+            ))}
           </div>
         </div>
       </div>
@@ -71,20 +146,16 @@ function Dashboard({ clients }: DashboardProps) {
   );
 }
 
-type TaskItemProps = {
-  title: string;
-  tag: string;
+type StatTileProps = {
+  label: string;
+  value: string;
 };
 
-function TaskItem({ title, tag }: TaskItemProps) {
+function StatTile({ label, value }: StatTileProps) {
   return (
-    <div className="task-item">
-      <div>
-        <h4>{title}</h4>
-        <p>Phantom Forge internal build</p>
-      </div>
-
-      <span>{tag}</span>
+    <div className="stat-tile">
+      <span>{label}</span>
+      <strong>{value}</strong>
     </div>
   );
 }

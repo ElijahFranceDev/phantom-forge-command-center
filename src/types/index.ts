@@ -8,6 +8,7 @@ export type PageName =
   | "Files"
   | "Requests"
   | "Approvals"
+  | "Operations"
   | "Notifications"
   | "Settings";
 

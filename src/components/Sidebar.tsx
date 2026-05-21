@@ -1,5 +1,6 @@
 import {
   Bell,
+  CalendarClock,
   CheckCircle,
   CreditCard,
   FileText,
@@ -28,6 +29,7 @@ const navItems: NavItem[] = [
   { name: "Files", icon: FileText },
   { name: "Requests", icon: MessageSquare },
   { name: "Approvals", icon: CheckCircle },
+  { name: "Operations", icon: CalendarClock },
   { name: "Notifications", icon: Bell },
   { name: "Settings", icon: Settings },
 ];

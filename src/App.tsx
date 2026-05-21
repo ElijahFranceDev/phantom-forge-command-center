@@ -12,6 +12,7 @@ import Requests from "./pages/Requests";
 import Approvals from "./pages/Approvals";
 import Files from "./pages/Files";
 import { clients as startingClients } from "./data/mockData";
+import Operations from "./pages/Operations";
 
 import {
   createClient,
@@ -442,6 +443,8 @@ function App() {
                 onDeleteApproval={handleDeleteApproval}
               />
             )}
+
+            {activePage === "Operations" && <Operations />}
 
             {activePage === "Notifications" && (
               <Placeholder title="Notifications" />

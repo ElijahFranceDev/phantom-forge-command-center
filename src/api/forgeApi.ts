@@ -1,4 +1,5 @@
 import type {
+  ForgeActionRequest,
   ForgeAiJob,
   ForgeApprovalRequest,
   ForgeMemory,
@@ -46,8 +47,76 @@ export function getForgeMemory(workspace: WorkspaceSlug) {
   return apiFetch<ForgeMemory[]>(`/forge/memory?workspace=${workspace}`);
 }
 
+export function createForgeMemory(
+  workspace: WorkspaceSlug,
+  input: {
+    key?: string;
+    category?: string;
+    content: string;
+    source?: string;
+    importance?: number;
+    isPinned?: boolean;
+  }
+) {
+  return apiFetch<ForgeMemory>("/forge/memory", {
+    method: "POST",
+    body: JSON.stringify({ workspace, ...input }),
+  });
+}
+
+export function updateForgeMemory(
+  id: string,
+  input: Partial<
+    Pick<ForgeMemory, "category" | "content" | "source" | "importance" | "isPinned">
+  >
+) {
+  return apiFetch<ForgeMemory>(`/forge/memory/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(input),
+  });
+}
+
+export function deleteForgeMemory(id: string) {
+  return apiFetch<{ message: string }>(`/forge/memory/${id}`, {
+    method: "DELETE",
+  });
+}
+
 export function getForgeTasks(workspace: WorkspaceSlug) {
   return apiFetch<ForgeTask[]>(`/forge/tasks?workspace=${workspace}`);
+}
+
+export function createForgeTask(
+  workspace: WorkspaceSlug,
+  input: {
+    title: string;
+    description?: string;
+    priority?: string;
+    dueAt?: string;
+  }
+) {
+  return apiFetch<ForgeTask>("/forge/tasks", {
+    method: "POST",
+    body: JSON.stringify({ workspace, ...input }),
+  });
+}
+
+export function updateForgeTask(
+  id: string,
+  input: Partial<
+    Pick<ForgeTask, "title" | "description" | "status" | "priority" | "dueAt">
+  >
+) {
+  return apiFetch<ForgeTask>(`/forge/tasks/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(input),
+  });
+}
+
+export function deleteForgeTask(id: string) {
+  return apiFetch<{ message: string }>(`/forge/tasks/${id}`, {
+    method: "DELETE",
+  });
 }
 
 export function getForgeAiJobs(workspace: WorkspaceSlug) {
@@ -63,6 +132,10 @@ export function createForgeAiJob(
     method: "POST",
     body: JSON.stringify({ workspace, request, agent }),
   });
+}
+
+export function getForgeActions(workspace: WorkspaceSlug) {
+  return apiFetch<ForgeActionRequest[]>(`/forge/actions?workspace=${workspace}`);
 }
 
 export function getForgeApprovals(workspace: WorkspaceSlug) {

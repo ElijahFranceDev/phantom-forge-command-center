@@ -1,0 +1,231 @@
+.forge-data-page {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 28px;
+}
+
+.forge-data-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.forge-data-header h1 {
+  margin: 4px 0 7px;
+  color: #f4f0e6;
+  font-size: 1.65rem;
+}
+
+.forge-data-header p {
+  max-width: 720px;
+  margin: 0;
+  color: #8d8d95;
+  line-height: 1.6;
+}
+
+.forge-data-card {
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 17px;
+  background: #0d0d10;
+  overflow: hidden;
+}
+
+.forge-data-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  padding: 16px;
+}
+
+.forge-data-form.three {
+  grid-template-columns: minmax(0, 1fr) 150px auto;
+}
+
+.forge-data-form input,
+.forge-data-form select,
+.forge-data-form textarea {
+  width: 100%;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 11px;
+  outline: none;
+  background: #08080a;
+  color: #eeeadf;
+  font: inherit;
+}
+
+.forge-data-form input,
+.forge-data-form select {
+  padding: 11px 12px;
+}
+
+.forge-data-form textarea {
+  min-height: 92px;
+  padding: 13px;
+  resize: vertical;
+}
+
+.forge-data-form input:focus,
+.forge-data-form select:focus,
+.forge-data-form textarea:focus {
+  border-color: rgba(212, 175, 55, 0.48);
+}
+
+.forge-primary-button,
+.forge-secondary-button,
+.forge-danger-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 10px 13px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 750;
+}
+
+.forge-primary-button {
+  border: 0;
+  background: linear-gradient(135deg, #d4af37, #a9851f);
+  color: #070707;
+}
+
+.forge-secondary-button {
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  background: rgba(255, 255, 255, 0.03);
+  color: #d5d1c8;
+}
+
+.forge-danger-button {
+  border: 1px solid rgba(228, 93, 93, 0.22);
+  background: rgba(228, 93, 93, 0.07);
+  color: #e98f8f;
+}
+
+.forge-primary-button:disabled,
+.forge-secondary-button:disabled,
+.forge-danger-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.forge-data-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.forge-data-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 16px 18px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.forge-data-row:first-child {
+  border-top: 0;
+}
+
+.forge-data-row-main {
+  min-width: 0;
+  flex: 1;
+}
+
+.forge-data-row-main strong {
+  color: #eee9df;
+}
+
+.forge-data-row-main p {
+  margin: 5px 0;
+  color: #92929a;
+  line-height: 1.5;
+}
+
+.forge-data-row-main small {
+  color: #606068;
+}
+
+.forge-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.forge-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 8px;
+  border: 1px solid rgba(212, 175, 55, 0.18);
+  border-radius: 999px;
+  background: rgba(212, 175, 55, 0.06);
+  color: #d4af37;
+  font-size: 0.67rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+}
+
+.forge-data-empty,
+.forge-data-error {
+  padding: 24px;
+  text-align: center;
+  color: #777780;
+}
+
+.forge-data-error {
+  border: 1px solid rgba(228, 93, 93, 0.2);
+  border-radius: 12px;
+  background: rgba(228, 93, 93, 0.06);
+  color: #e89c9c;
+}
+
+.forge-memory-compose {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+}
+
+.forge-memory-options {
+  display: grid;
+  grid-template-columns: 180px 1fr auto;
+  gap: 10px;
+  align-items: center;
+}
+
+.forge-checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #92929a;
+  font-size: 0.83rem;
+}
+
+.forge-checkbox input {
+  width: auto;
+}
+
+@media (max-width: 760px) {
+  .forge-data-page {
+    padding: 16px;
+  }
+
+  .forge-data-form,
+  .forge-data-form.three,
+  .forge-memory-options {
+    grid-template-columns: 1fr;
+  }
+
+  .forge-data-row,
+  .forge-data-header {
+    flex-direction: column;
+  }
+
+  .forge-row-actions {
+    justify-content: flex-start;
+  }
+}

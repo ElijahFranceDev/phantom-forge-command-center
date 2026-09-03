@@ -2,9 +2,12 @@ import type {
   ForgeActionRequest,
   ForgeAiJob,
   ForgeApprovalRequest,
+  ForgeDeveloperStatus,
   ForgeMemory,
+  ForgeRepositoryInspection,
   ForgeTask,
   ForgeWorkspace,
+  SoftwareProject,
   WorkspaceSlug,
 } from "../types";
 
@@ -173,4 +176,58 @@ export function rejectForgeRequest(id: string, note?: string) {
     method: "POST",
     body: JSON.stringify({ note }),
   });
+}
+
+export function getForgeDeveloperStatus() {
+  return apiFetch<ForgeDeveloperStatus>("/forge/developer/status");
+}
+
+export function getSoftwareProjects(workspace: WorkspaceSlug) {
+  return apiFetch<SoftwareProject[]>(
+    `/forge/developer/projects?workspace=${workspace}`
+  );
+}
+
+export function createSoftwareProject(
+  workspace: WorkspaceSlug,
+  input: {
+    slug: string;
+    name: string;
+    description?: string;
+    projectType?: string;
+    repositoryFullName?: string;
+    defaultBranch?: string;
+    deploymentProvider?: string;
+    deploymentProjectId?: string;
+    productionUrl?: string;
+    notes?: string;
+  }
+) {
+  return apiFetch<SoftwareProject>("/forge/developer/projects", {
+    method: "POST",
+    body: JSON.stringify({ workspace, ...input }),
+  });
+}
+
+export function inspectSoftwareProject(id: string) {
+  return apiFetch<ForgeRepositoryInspection>(
+    `/forge/developer/projects/${id}/inspect`
+  );
+}
+
+export function prepareCodeChange(
+  id: string,
+  input: {
+    summary: string;
+    instructions: string;
+    targetBranch?: string;
+  }
+) {
+  return apiFetch<ForgeActionRequest>(
+    `/forge/developer/projects/${id}/change-request`,
+    {
+      method: "POST",
+      body: JSON.stringify(input),
+    }
+  );
 }

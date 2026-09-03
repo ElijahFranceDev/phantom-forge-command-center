@@ -27,7 +27,9 @@ import {
 
 import {
   createRevisionRequest,
+  deleteRevisionRequest,
   getRevisionRequests,
+  updateRevisionRequestStatus,
 } from "./api/revisionRequestsApi";
 
 import {
@@ -257,6 +259,30 @@ function App() {
     }
   }
 
+  async function handleUpdateRevisionRequestStatus(id: string, status: string) {
+    try {
+      const updatedRequest = await updateRevisionRequestStatus(id, status);
+      setRevisionRequests((currentRequests) =>
+        currentRequests.map((request) =>
+          request.id === updatedRequest.id ? updatedRequest : request
+        )
+      );
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
+  async function handleDeleteRevisionRequest(id: string) {
+    try {
+      await deleteRevisionRequest(id);
+      setRevisionRequests((currentRequests) =>
+        currentRequests.filter((request) => request.id !== id)
+      );
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
   async function handleCreateApproval(clientId: string, label: string) {
     try {
       const savedApproval = await createApproval(clientId, label);
@@ -354,8 +380,8 @@ function App() {
               <Requests
                 revisionRequests={revisionRequests}
                 onRefreshRequests={loadRevisionRequestsFromApi}
-                onUpdateRequestStatus={() => Promise.resolve()}
-                onDeleteRequest={() => Promise.resolve()}
+                onUpdateRequestStatus={handleUpdateRevisionRequestStatus}
+                onDeleteRequest={handleDeleteRevisionRequest}
               />
             )}
 

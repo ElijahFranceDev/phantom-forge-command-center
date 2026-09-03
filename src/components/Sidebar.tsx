@@ -1,11 +1,16 @@
 import {
+  Activity,
   Bell,
+  Brain,
   CalendarClock,
   CheckCircle,
+  Code2,
+  Command,
   CreditCard,
   FileText,
   FolderKanban,
   LayoutDashboard,
+  ListTodo,
   LogOut,
   MessageSquare,
   Settings,
@@ -22,14 +27,19 @@ type SidebarProps = {
 };
 
 const navItems: NavItem[] = [
+  { name: "Command", icon: Command },
   { name: "Dashboard", icon: LayoutDashboard },
+  { name: "Operations", icon: CalendarClock },
   { name: "Clients", icon: Users },
   { name: "Projects", icon: FolderKanban },
+  { name: "Developer", icon: Code2 },
+  { name: "Tasks", icon: ListTodo },
+  { name: "Approvals", icon: CheckCircle },
+  { name: "Memory", icon: Brain },
+  { name: "Activity", icon: Activity },
   { name: "Payments", icon: CreditCard },
   { name: "Files", icon: FileText },
   { name: "Requests", icon: MessageSquare },
-  { name: "Approvals", icon: CheckCircle },
-  { name: "Operations", icon: CalendarClock },
   { name: "Notifications", icon: Bell },
   { name: "Settings", icon: Settings },
 ];
@@ -44,8 +54,8 @@ function Sidebar({
     <aside className={`sidebar ${sidebarOpen ? "open" : ""}`}>
       <div className="sidebar-header">
         <div>
-          <p className="eyebrow">Phantom Forge</p>
-          <h1>Command Center</h1>
+          <p className="eyebrow">Forge Command</p>
+          <h1>Business AI</h1>
         </div>
 
         <button className="mobile-close" onClick={() => setSidebarOpen(false)}>
@@ -76,7 +86,7 @@ function Sidebar({
       <div className="sidebar-footer">
         <button className="logout-btn">
           <LogOut size={18} />
-          <span>Logout</span>
+          <span>Lock Console</span>
         </button>
       </div>
     </aside>

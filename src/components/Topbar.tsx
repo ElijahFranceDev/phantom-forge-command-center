@@ -1,11 +1,14 @@
 import { Bell, Menu } from "lucide-react";
-import type { PageName, ViewMode } from "../types";
+import type { PageName, ViewMode, WorkspaceSlug } from "../types";
+import "./Topbar.css";
 
 type TopbarProps = {
   activePage: PageName;
   viewMode: ViewMode;
   setViewMode: (mode: ViewMode) => void;
   setSidebarOpen: (open: boolean) => void;
+  activeWorkspace: WorkspaceSlug;
+  setActiveWorkspace: (workspace: WorkspaceSlug) => void;
   isClientOnlyMode?: boolean;
 };
 
@@ -14,6 +17,8 @@ function Topbar({
   viewMode,
   setViewMode,
   setSidebarOpen,
+  activeWorkspace,
+  setActiveWorkspace,
   isClientOnlyMode = false,
 }: TopbarProps) {
   return (
@@ -26,12 +31,35 @@ function Topbar({
 
       <div>
         <p className="eyebrow">
-          {viewMode === "Admin" ? "Private Agency OS" : "Client Portal"}
+          {viewMode === "Admin"
+            ? activeWorkspace === "ffs"
+              ? "Frontline Forge Solutions"
+              : "Forge Capital"
+            : "Client Portal"}
         </p>
         <h2>{viewMode === "Admin" ? activePage : "Project Portal"}</h2>
       </div>
 
       <div className="topbar-actions">
+        {!isClientOnlyMode && viewMode === "Admin" && (
+          <div className="forge-workspace-switch" aria-label="Active workspace">
+            <button
+              className={activeWorkspace === "ffs" ? "active" : ""}
+              onClick={() => setActiveWorkspace("ffs")}
+              title="Frontline Forge Solutions"
+            >
+              FFS
+            </button>
+            <button
+              className={activeWorkspace === "forge-capital" ? "active" : ""}
+              onClick={() => setActiveWorkspace("forge-capital")}
+              title="Forge Capital"
+            >
+              Forge Capital
+            </button>
+          </div>
+        )}
+
         {!isClientOnlyMode && (
           <div className="view-switch">
             <button
@@ -57,7 +85,11 @@ function Topbar({
         )}
 
         <div className="profile-pill">
-          {viewMode === "Client" ? "PF" : "EF"}
+          {viewMode === "Client"
+            ? "PF"
+            : activeWorkspace === "ffs"
+              ? "FFS"
+              : "FC"}
         </div>
       </div>
     </header>

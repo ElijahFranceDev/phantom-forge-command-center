@@ -3,13 +3,18 @@ import { useEffect, useState } from "react";
 import Sidebar from "./components/Sidebar";
 import Topbar from "./components/Topbar";
 import Placeholder from "./components/Placeholder";
+import ForgeCommand from "./pages/ForgeCommand";
+import ForgeDeveloper from "./pages/ForgeDeveloper";
+import ForgeTasks from "./pages/ForgeTasks";
+import ForgeMemory from "./pages/ForgeMemory";
+import ForgeApprovals from "./pages/ForgeApprovals";
+import ForgeActivity from "./pages/ForgeActivity";
 import Dashboard from "./pages/Dashboard";
 import Clients from "./pages/Clients";
 import Projects from "./pages/Projects";
 import Payments from "./pages/Payments";
 import ClientPortal from "./pages/ClientPortal";
 import Requests from "./pages/Requests";
-import Approvals from "./pages/Approvals";
 import Files from "./pages/Files";
 import { clients as startingClients } from "./data/mockData";
 import Operations from "./pages/Operations";
@@ -30,9 +35,7 @@ import {
 
 import {
   createApproval,
-  deleteApproval,
   getApprovals,
-  updateApprovalStatus,
 } from "./api/approvalsApi";
 
 import {
@@ -47,11 +50,13 @@ import type {
   RevisionRequest,
   UploadedFile,
   ViewMode,
+  WorkspaceSlug,
 } from "./types";
 
 import "./App.css";
 
 const SELECTED_CLIENT_STORAGE_KEY = "phantom-forge-selected-client-id";
+const FORGE_WORKSPACE_STORAGE_KEY = "forge-command-workspace";
 
 function getUrlClientId() {
   const params = new URLSearchParams(window.location.search);
@@ -68,6 +73,11 @@ function loadSelectedClientId() {
   return localStorage.getItem(SELECTED_CLIENT_STORAGE_KEY) || "1";
 }
 
+function loadWorkspace(): WorkspaceSlug {
+  const savedWorkspace = localStorage.getItem(FORGE_WORKSPACE_STORAGE_KEY);
+  return savedWorkspace === "forge-capital" ? "forge-capital" : "ffs";
+}
+
 function getInitialViewMode(): ViewMode {
   const params = new URLSearchParams(window.location.search);
   const view = params.get("view");
@@ -76,8 +86,9 @@ function getInitialViewMode(): ViewMode {
 }
 
 function App() {
-  const [activePage, setActivePage] = useState<PageName>("Dashboard");
+  const [activePage, setActivePage] = useState<PageName>("Command");
   const [viewMode, setViewMode] = useState<ViewMode>(getInitialViewMode);
+  const [activeWorkspace, setActiveWorkspace] = useState<WorkspaceSlug>(loadWorkspace);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const [clients, setClients] = useState<Client[]>(startingClients);
@@ -110,7 +121,6 @@ function App() {
       setApiError("");
 
       const apiClients = await getClients();
-
       setClients(apiClients);
 
       if (apiClients.length > 0) {
@@ -140,7 +150,7 @@ function App() {
       }
     } catch (error) {
       console.error(error);
-      setApiError("Could not connect to Phantom Forge API. Using demo data.");
+      setApiError("Could not connect to the legacy portal API. Using demo data.");
       setClients(startingClients);
     } finally {
       setIsLoadingClients(false);
@@ -149,34 +159,25 @@ function App() {
 
   async function loadRevisionRequestsFromApi() {
     try {
-      const apiRevisionRequests = await getRevisionRequests();
-      setRevisionRequests(apiRevisionRequests);
-      setApiError("");
+      setRevisionRequests(await getRevisionRequests());
     } catch (error) {
       console.error(error);
-      setApiError("Could not load revision requests from database.");
     }
   }
 
   async function loadApprovalsFromApi() {
     try {
-      const apiApprovals = await getApprovals();
-      setApprovals(apiApprovals);
-      setApiError("");
+      setApprovals(await getApprovals());
     } catch (error) {
       console.error(error);
-      setApiError("Could not load approvals from database.");
     }
   }
 
   async function loadUploadedFilesFromApi() {
     try {
-      const apiFiles = await getUploadedFiles();
-      setUploadedFiles(apiFiles);
-      setApiError("");
+      setUploadedFiles(await getUploadedFiles());
     } catch (error) {
       console.error(error);
-      setApiError("Could not load uploaded files from database.");
     }
   }
 
@@ -191,10 +192,13 @@ function App() {
     localStorage.setItem(SELECTED_CLIENT_STORAGE_KEY, selectedClientId);
   }, [selectedClientId]);
 
+  useEffect(() => {
+    localStorage.setItem(FORGE_WORKSPACE_STORAGE_KEY, activeWorkspace);
+  }, [activeWorkspace]);
+
   async function handleAddClient(newClient: Client) {
     try {
       const savedClient = await createClient(newClient);
-
       setClients((currentClients) => [savedClient, ...currentClients]);
       setSelectedClientId(savedClient.id);
       setApiError("");
@@ -248,18 +252,10 @@ function App() {
   async function handleCreateRevisionRequest(clientId: string, message: string) {
     try {
       const savedRequest = await createRevisionRequest(clientId, message);
-
-      setRevisionRequests((currentRequests) => [
-        savedRequest,
-        ...currentRequests,
-      ]);
-
-      setApiError("");
-
+      setRevisionRequests((currentRequests) => [savedRequest, ...currentRequests]);
       return savedRequest;
     } catch (error) {
       console.error(error);
-      setApiError("Could not save revision request to database.");
       throw error;
     }
   }
@@ -267,98 +263,46 @@ function App() {
   async function handleUpdateRevisionRequestStatus(id: string, status: string) {
     try {
       const updatedRequest = await updateRevisionRequestStatus(id, status);
-
       setRevisionRequests((currentRequests) =>
         currentRequests.map((request) =>
           request.id === updatedRequest.id ? updatedRequest : request
         )
       );
-
-      setApiError("");
     } catch (error) {
       console.error(error);
-      setApiError("Could not update revision request.");
     }
   }
 
   async function handleDeleteRevisionRequest(id: string) {
     try {
       await deleteRevisionRequest(id);
-
       setRevisionRequests((currentRequests) =>
         currentRequests.filter((request) => request.id !== id)
       );
-
-      setApiError("");
     } catch (error) {
       console.error(error);
-      setApiError("Could not delete revision request.");
     }
   }
 
   async function handleCreateApproval(clientId: string, label: string) {
     try {
       const savedApproval = await createApproval(clientId, label);
-
-      setApprovals((currentApprovals) => [
-        savedApproval,
-        ...currentApprovals,
-      ]);
-
-      setApiError("");
-
+      setApprovals((currentApprovals) => [savedApproval, ...currentApprovals]);
       return savedApproval;
     } catch (error) {
       console.error(error);
-      setApiError("Could not save approval to database.");
       throw error;
-    }
-  }
-
-  async function handleUpdateApprovalStatus(id: string, status: string) {
-    try {
-      const updatedApproval = await updateApprovalStatus(id, status);
-
-      setApprovals((currentApprovals) =>
-        currentApprovals.map((approval) =>
-          approval.id === updatedApproval.id ? updatedApproval : approval
-        )
-      );
-
-      setApiError("");
-    } catch (error) {
-      console.error(error);
-      setApiError("Could not update approval.");
-    }
-  }
-
-  async function handleDeleteApproval(id: string) {
-    try {
-      await deleteApproval(id);
-
-      setApprovals((currentApprovals) =>
-        currentApprovals.filter((approval) => approval.id !== id)
-      );
-
-      setApiError("");
-    } catch (error) {
-      console.error(error);
-      setApiError("Could not delete approval.");
     }
   }
 
   async function handleDeleteUploadedFile(id: string) {
     try {
       await deleteUploadedFile(id);
-
       setUploadedFiles((currentFiles) =>
         currentFiles.filter((file) => file.id !== id)
       );
-
-      setApiError("");
     } catch (error) {
       console.error(error);
-      setApiError("Could not delete uploaded file.");
     }
   }
 
@@ -379,12 +323,16 @@ function App() {
           viewMode={viewMode}
           setViewMode={setViewMode}
           setSidebarOpen={setSidebarOpen}
+          activeWorkspace={activeWorkspace}
+          setActiveWorkspace={setActiveWorkspace}
           isClientOnlyMode={isClientOnlyMode}
         />
 
-        {apiError && <div className="api-alert">{apiError}</div>}
+        {viewMode === "Client" && apiError && (
+          <div className="api-alert">{apiError}</div>
+        )}
 
-        {isLoadingClients && (
+        {viewMode === "Client" && isLoadingClients && (
           <div className="api-alert">Loading project portal...</div>
         )}
 
@@ -400,9 +348,11 @@ function App() {
 
         {viewMode === "Admin" && !isClientOnlyMode && (
           <>
+            {activePage === "Command" && <ForgeCommand workspace={activeWorkspace} />}
+
             {activePage === "Dashboard" && (
               <Dashboard clients={clients} approvals={approvals} />
-           )}
+            )}
 
             {activePage === "Clients" && (
               <Clients
@@ -417,7 +367,6 @@ function App() {
             )}
 
             {activePage === "Projects" && <Projects />}
-
             {activePage === "Payments" && <Payments clients={clients} />}
 
             {activePage === "Files" && (
@@ -437,22 +386,16 @@ function App() {
               />
             )}
 
-            {activePage === "Approvals" && (
-              <Approvals
-                approvals={approvals}
-                onRefreshApprovals={loadApprovalsFromApi}
-                onUpdateApprovalStatus={handleUpdateApprovalStatus}
-                onDeleteApproval={handleDeleteApproval}
-              />
-            )}
-
+            {activePage === "Approvals" && <ForgeApprovals workspace={activeWorkspace} />}
             {activePage === "Operations" && <Operations />}
-
+            {activePage === "Tasks" && <ForgeTasks workspace={activeWorkspace} />}
+            {activePage === "Memory" && <ForgeMemory workspace={activeWorkspace} />}
+            {activePage === "Activity" && <ForgeActivity workspace={activeWorkspace} />}
+            {activePage === "Developer" && <ForgeDeveloper workspace={activeWorkspace} />}
             {activePage === "Notifications" && (
               <Placeholder title="Notifications" />
             )}
-
-            {activePage === "Settings" && <Placeholder title="Settings" />}
+            {activePage === "Settings" && <Placeholder title="Forge Command Settings" />}
           </>
         )}
       </main>

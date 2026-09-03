@@ -63,6 +63,80 @@ export type ForgeTask = {
   updatedAt: string;
 };
 
+export type ForgeMessage = {
+  id: string;
+  conversationId: string;
+  role: "user" | "assistant" | string;
+  content: string;
+  metadata: unknown;
+  createdAt: string;
+};
+
+export type ForgeConversation = {
+  id: string;
+  workspaceId: string;
+  title: string;
+  status: string;
+  lastMessageAt: string;
+  createdAt: string;
+  updatedAt: string;
+  messages?: ForgeMessage[];
+  aiJobs?: ForgeAiJob[];
+  _count?: { messages: number };
+};
+
+export type ForgeDeployment = {
+  id: string;
+  softwareProjectId: string;
+  developerRunId: string | null;
+  provider: string;
+  externalId: string | null;
+  environment: string;
+  status: string;
+  url: string | null;
+  branch: string | null;
+  commitSha: string | null;
+  isProduction: boolean;
+  metadata: unknown;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type ForgeDeveloperFileChange = {
+  id: string;
+  developerRunId: string;
+  path: string;
+  operation: string;
+  previousSha: string | null;
+  newSha: string | null;
+  rationale: string | null;
+  createdAt: string;
+};
+
+export type ForgeDeveloperRun = {
+  id: string;
+  softwareProjectId: string;
+  actionRequestId: string | null;
+  runType: string;
+  status: string;
+  baseBranch: string;
+  targetBranch: string | null;
+  commitSha: string | null;
+  pullRequestNumber: number | null;
+  pullRequestUrl: string | null;
+  plan: unknown;
+  errorLog: string | null;
+  attempts: number;
+  startedAt: string;
+  completedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  softwareProject?: SoftwareProject;
+  fileChanges?: ForgeDeveloperFileChange[];
+  deployments?: ForgeDeployment[];
+  actionRequest?: ForgeActionRequest | null;
+};
+
 export type ForgeApprovalRequest = {
   id: string;
   workspaceId: string;
@@ -74,6 +148,8 @@ export type ForgeApprovalRequest = {
   decidedAt: string | null;
   createdAt: string;
   updatedAt: string;
+  actionRequest?: ForgeActionRequest | null;
+  executionDispatched?: boolean;
 };
 
 export type ForgeActionRequest = {
@@ -90,11 +166,13 @@ export type ForgeActionRequest = {
   createdAt: string;
   updatedAt: string;
   approvalRequest?: ForgeApprovalRequest | null;
+  developerRun?: ForgeDeveloperRun | null;
 };
 
 export type ForgeAiJob = {
   id: string;
   workspaceId: string;
+  conversationId?: string | null;
   agent: string;
   request: string;
   status: string;
@@ -124,6 +202,21 @@ export type SoftwareProject = {
   notes: string | null;
   createdAt: string;
   updatedAt: string;
+  developerRuns?: ForgeDeveloperRun[];
+};
+
+export type ForgeAppBuild = {
+  id: string;
+  workspaceId: string;
+  softwareProjectId: string | null;
+  name: string;
+  prompt: string;
+  status: string;
+  specification: unknown;
+  repositoryName: string | null;
+  createdAt: string;
+  updatedAt: string;
+  softwareProject?: SoftwareProject | null;
 };
 
 export type ForgeDeveloperStatus = {
@@ -133,12 +226,20 @@ export type ForgeDeveloperStatus = {
     baseUrl: string;
     reason?: string;
   };
+  vercel: {
+    configured: boolean;
+    provider: "vercel";
+    teamId: string | null;
+    reason?: string;
+  };
 };
 
 export type ForgeRepositoryInspection = {
   project: SoftwareProject;
   inspection: {
     repository: {
+      id?: number;
+      name?: string;
       fullName: string;
       private: boolean;
       defaultBranch: string;

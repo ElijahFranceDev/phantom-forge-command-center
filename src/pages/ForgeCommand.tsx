@@ -6,6 +6,7 @@ import {
   CheckCircle2,
   Clock3,
   Code2,
+  Cpu,
   Loader2,
   Send,
   ShieldCheck,
@@ -18,6 +19,8 @@ import {
   getForgeHealth,
   getForgeMemory,
   getForgeTasks,
+  runForgeAiJob,
+  type ForgeAiProviderStatus,
 } from "../api/forgeApi";
 import type {
   ForgeAiJob,
@@ -53,6 +56,7 @@ function ForgeCommand({ workspace }: ForgeCommandProps) {
   const [memory, setMemory] = useState<ForgeMemory[]>([]);
   const [approvals, setApprovals] = useState<ForgeApprovalRequest[]>([]);
   const [coreStatus, setCoreStatus] = useState("checking");
+  const [providerStatus, setProviderStatus] = useState<ForgeAiProviderStatus | null>(null);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
@@ -64,6 +68,11 @@ function ForgeCommand({ workspace }: ForgeCommandProps) {
   const openTasks = useMemo(
     () => tasks.filter((task) => task.status !== "DONE"),
     [tasks]
+  );
+
+  const latestCompletedJob = useMemo(
+    () => jobs.find((job) => job.status === "COMPLETED" && job.result),
+    [jobs]
   );
 
   async function loadForgeData() {
@@ -80,6 +89,7 @@ function ForgeCommand({ workspace }: ForgeCommandProps) {
         ]);
 
       setCoreStatus(health.status);
+      setProviderStatus(health.aiProvider);
       setJobs(loadedJobs);
       setTasks(loadedTasks);
       setMemory(loadedMemory);
@@ -87,6 +97,7 @@ function ForgeCommand({ workspace }: ForgeCommandProps) {
     } catch (loadError) {
       console.error(loadError);
       setCoreStatus("offline");
+      setProviderStatus(null);
       setError(
         loadError instanceof Error
           ? loadError.message
@@ -112,16 +123,24 @@ function ForgeCommand({ workspace }: ForgeCommandProps) {
       setSubmitting(true);
       setError("");
 
-      const job = await createForgeAiJob(workspace, request);
-      setJobs((currentJobs) => [job, ...currentJobs]);
+      const queuedJob = await createForgeAiJob(workspace, request);
+      setJobs((currentJobs) => [queuedJob, ...currentJobs]);
       setCommand("");
+
+      const completedJob = await runForgeAiJob(queuedJob.id);
+      setJobs((currentJobs) =>
+        currentJobs.map((job) =>
+          job.id === completedJob.id ? completedJob : job
+        )
+      );
     } catch (submitError) {
       console.error(submitError);
       setError(
         submitError instanceof Error
           ? submitError.message
-          : "Could not queue the Forge Executive request."
+          : "Forge Executive could not complete the request."
       );
+      await loadForgeData();
     } finally {
       setSubmitting(false);
     }
@@ -137,20 +156,48 @@ function ForgeCommand({ workspace }: ForgeCommandProps) {
           </div>
           <h1>What are we working on, boss?</h1>
           <p>
-            {WORKSPACE_LABELS[workspace]} is active. Commands are now stored as
-            AI jobs inside the Forge Core so they can be routed, audited, and
-            approved before execution.
+            {WORKSPACE_LABELS[workspace]} is active. PhantomSync loads this
+            workspace's durable memory and open tasks before Forge Executive
+            answers.
           </p>
         </div>
 
-        <div className={`forge-core-status ${coreStatus}`}>
-          <span className="status-dot" />
-          <div>
-            <strong>PhantomSync Core</strong>
-            <small>{coreStatus === "healthy" ? "Connected" : coreStatus}</small>
+        <div className="forge-system-stack">
+          <div className={`forge-core-status ${coreStatus}`}>
+            <span className="status-dot" />
+            <div>
+              <strong>PhantomSync Core</strong>
+              <small>{coreStatus === "healthy" ? "Connected" : coreStatus}</small>
+            </div>
+          </div>
+
+          <div
+            className={`forge-core-status ${
+              providerStatus?.configured ? "healthy" : "offline"
+            }`}
+          >
+            <Cpu size={16} />
+            <div>
+              <strong>AI Brain</strong>
+              <small>
+                {providerStatus?.configured
+                  ? providerStatus.model || providerStatus.provider
+                  : "Model not configured"}
+              </small>
+            </div>
           </div>
         </div>
       </div>
+
+      {providerStatus && !providerStatus.configured && (
+        <div className="forge-provider-notice">
+          <Cpu size={17} />
+          <div>
+            <strong>Forge Executive is wired but needs a model connection.</strong>
+            <span>{providerStatus.reason}</span>
+          </div>
+        </div>
+      )}
 
       {error && <div className="forge-command-error">{error}</div>}
 
@@ -177,12 +224,30 @@ function ForgeCommand({ workspace }: ForgeCommandProps) {
             <span>Production actions remain approval-gated.</span>
           </div>
 
-          <button type="submit" disabled={!command.trim() || submitting}>
+          <button
+            type="submit"
+            disabled={!command.trim() || submitting || !providerStatus?.configured}
+          >
             {submitting ? <Loader2 className="spin" size={17} /> : <Send size={17} />}
-            {submitting ? "Queuing" : "Run Command"}
+            {submitting ? "Thinking" : "Run Command"}
           </button>
         </div>
       </form>
+
+      {latestCompletedJob?.result && (
+        <article className="forge-executive-response">
+          <div className="forge-response-heading">
+            <div className="forge-response-avatar">
+              <Bot size={19} />
+            </div>
+            <div>
+              <span>Forge Executive</span>
+              <small>{formatDate(latestCompletedJob.updatedAt)}</small>
+            </div>
+          </div>
+          <div className="forge-response-body">{latestCompletedJob.result}</div>
+        </article>
+      )}
 
       <div className="forge-stat-grid">
         <article>
@@ -239,6 +304,9 @@ function ForgeCommand({ workspace }: ForgeCommandProps) {
                   <div className="forge-list-main">
                     <strong>{job.agent}</strong>
                     <p>{job.request}</p>
+                    {job.result && job.status === "FAILED" && (
+                      <p className="forge-failed-result">{job.result}</p>
+                    )}
                     <small>{formatDate(job.createdAt)}</small>
                   </div>
                   <span className={`forge-job-status ${job.status.toLowerCase()}`}>

@@ -4,13 +4,16 @@ import Sidebar from "./components/Sidebar";
 import Topbar from "./components/Topbar";
 import Placeholder from "./components/Placeholder";
 import ForgeCommand from "./pages/ForgeCommand";
+import ForgeTasks from "./pages/ForgeTasks";
+import ForgeMemory from "./pages/ForgeMemory";
+import ForgeApprovals from "./pages/ForgeApprovals";
+import ForgeActivity from "./pages/ForgeActivity";
 import Dashboard from "./pages/Dashboard";
 import Clients from "./pages/Clients";
 import Projects from "./pages/Projects";
 import Payments from "./pages/Payments";
 import ClientPortal from "./pages/ClientPortal";
 import Requests from "./pages/Requests";
-import Approvals from "./pages/Approvals";
 import Files from "./pages/Files";
 import { clients as startingClients } from "./data/mockData";
 import Operations from "./pages/Operations";
@@ -24,16 +27,12 @@ import {
 
 import {
   createRevisionRequest,
-  deleteRevisionRequest,
   getRevisionRequests,
-  updateRevisionRequestStatus,
 } from "./api/revisionRequestsApi";
 
 import {
   createApproval,
-  deleteApproval,
   getApprovals,
-  updateApprovalStatus,
 } from "./api/approvalsApi";
 
 import {
@@ -119,7 +118,6 @@ function App() {
       setApiError("");
 
       const apiClients = await getClients();
-
       setClients(apiClients);
 
       if (apiClients.length > 0) {
@@ -158,8 +156,7 @@ function App() {
 
   async function loadRevisionRequestsFromApi() {
     try {
-      const apiRevisionRequests = await getRevisionRequests();
-      setRevisionRequests(apiRevisionRequests);
+      setRevisionRequests(await getRevisionRequests());
     } catch (error) {
       console.error(error);
     }
@@ -167,8 +164,7 @@ function App() {
 
   async function loadApprovalsFromApi() {
     try {
-      const apiApprovals = await getApprovals();
-      setApprovals(apiApprovals);
+      setApprovals(await getApprovals());
     } catch (error) {
       console.error(error);
     }
@@ -176,8 +172,7 @@ function App() {
 
   async function loadUploadedFilesFromApi() {
     try {
-      const apiFiles = await getUploadedFiles();
-      setUploadedFiles(apiFiles);
+      setUploadedFiles(await getUploadedFiles());
     } catch (error) {
       console.error(error);
     }
@@ -262,31 +257,6 @@ function App() {
     }
   }
 
-  async function handleUpdateRevisionRequestStatus(id: string, status: string) {
-    try {
-      const updatedRequest = await updateRevisionRequestStatus(id, status);
-
-      setRevisionRequests((currentRequests) =>
-        currentRequests.map((request) =>
-          request.id === updatedRequest.id ? updatedRequest : request
-        )
-      );
-    } catch (error) {
-      console.error(error);
-    }
-  }
-
-  async function handleDeleteRevisionRequest(id: string) {
-    try {
-      await deleteRevisionRequest(id);
-      setRevisionRequests((currentRequests) =>
-        currentRequests.filter((request) => request.id !== id)
-      );
-    } catch (error) {
-      console.error(error);
-    }
-  }
-
   async function handleCreateApproval(clientId: string, label: string) {
     try {
       const savedApproval = await createApproval(clientId, label);
@@ -295,31 +265,6 @@ function App() {
     } catch (error) {
       console.error(error);
       throw error;
-    }
-  }
-
-  async function handleUpdateApprovalStatus(id: string, status: string) {
-    try {
-      const updatedApproval = await updateApprovalStatus(id, status);
-
-      setApprovals((currentApprovals) =>
-        currentApprovals.map((approval) =>
-          approval.id === updatedApproval.id ? updatedApproval : approval
-        )
-      );
-    } catch (error) {
-      console.error(error);
-    }
-  }
-
-  async function handleDeleteApproval(id: string) {
-    try {
-      await deleteApproval(id);
-      setApprovals((currentApprovals) =>
-        currentApprovals.filter((approval) => approval.id !== id)
-      );
-    } catch (error) {
-      console.error(error);
     }
   }
 
@@ -376,9 +321,7 @@ function App() {
 
         {viewMode === "Admin" && !isClientOnlyMode && (
           <>
-            {activePage === "Command" && (
-              <ForgeCommand workspace={activeWorkspace} />
-            )}
+            {activePage === "Command" && <ForgeCommand workspace={activeWorkspace} />}
 
             {activePage === "Dashboard" && (
               <Dashboard clients={clients} approvals={approvals} />
@@ -411,33 +354,19 @@ function App() {
               <Requests
                 revisionRequests={revisionRequests}
                 onRefreshRequests={loadRevisionRequestsFromApi}
-                onUpdateRequestStatus={handleUpdateRevisionRequestStatus}
-                onDeleteRequest={handleDeleteRevisionRequest}
+                onUpdateRequestStatus={() => Promise.resolve()}
+                onDeleteRequest={() => Promise.resolve()}
               />
             )}
 
-            {activePage === "Approvals" && (
-              <Approvals
-                approvals={approvals}
-                onRefreshApprovals={loadApprovalsFromApi}
-                onUpdateApprovalStatus={handleUpdateApprovalStatus}
-                onDeleteApproval={handleDeleteApproval}
-              />
-            )}
-
+            {activePage === "Approvals" && <ForgeApprovals workspace={activeWorkspace} />}
             {activePage === "Operations" && <Operations />}
+            {activePage === "Tasks" && <ForgeTasks workspace={activeWorkspace} />}
+            {activePage === "Memory" && <ForgeMemory workspace={activeWorkspace} />}
+            {activePage === "Activity" && <ForgeActivity workspace={activeWorkspace} />}
 
             {activePage === "Developer" && (
               <Placeholder title="Forge Developer — GitHub + build pipeline next" />
-            )}
-            {activePage === "Tasks" && (
-              <Placeholder title={`${activeWorkspace === "ffs" ? "FFS" : "Forge Capital"} AI Tasks`} />
-            )}
-            {activePage === "Memory" && (
-              <Placeholder title={`${activeWorkspace === "ffs" ? "FFS" : "Forge Capital"} PhantomSync Memory`} />
-            )}
-            {activePage === "Activity" && (
-              <Placeholder title="Forge AI Activity Log" />
             )}
             {activePage === "Notifications" && (
               <Placeholder title="Notifications" />

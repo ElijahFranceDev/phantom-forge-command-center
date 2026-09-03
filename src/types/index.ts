@@ -107,6 +107,62 @@ export type ForgeAiJob = {
   actionRequests?: ForgeActionRequest[];
 };
 
+export type SoftwareProject = {
+  id: string;
+  workspaceId: string;
+  slug: string;
+  name: string;
+  description: string | null;
+  projectType: string;
+  status: string;
+  repositoryProvider: string;
+  repositoryFullName: string | null;
+  defaultBranch: string;
+  deploymentProvider: string | null;
+  deploymentProjectId: string | null;
+  productionUrl: string | null;
+  notes: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type ForgeDeveloperStatus = {
+  github: {
+    configured: boolean;
+    provider: "github";
+    baseUrl: string;
+    reason?: string;
+  };
+};
+
+export type ForgeRepositoryInspection = {
+  project: SoftwareProject;
+  inspection: {
+    repository: {
+      fullName: string;
+      private: boolean;
+      defaultBranch: string;
+      url: string;
+      description: string | null;
+      language: string | null;
+      archived: boolean;
+      pushedAt: string | null;
+    };
+    root: Array<{
+      name: string;
+      path: string;
+      type: string;
+      size: number;
+    }>;
+    importantFiles: Array<{
+      name: string;
+      path: string;
+      type: string;
+      size: number;
+    }>;
+  };
+};
+
 export type Client = {
   id: string;
   name: string;

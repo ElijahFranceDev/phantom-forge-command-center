@@ -1,30 +1,29 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  Activity,
   Bot,
   Brain,
   CheckCircle2,
-  Clock3,
-  Code2,
-  Cpu,
   Loader2,
+  MessageSquarePlus,
   Send,
   ShieldCheck,
   Sparkles,
+  TerminalSquare,
 } from "lucide-react";
 import {
-  createForgeAiJob,
-  getForgeAiJobs,
+  createForgeConversation,
   getForgeApprovals,
+  getForgeConversation,
+  getForgeConversations,
   getForgeHealth,
   getForgeMemory,
   getForgeTasks,
-  runForgeAiJob,
-  type ForgeAiProviderStatus,
+  sendForgeConversationMessage,
 } from "../api/forgeApi";
 import type {
-  ForgeAiJob,
   ForgeApprovalRequest,
+  ForgeConversation,
+  ForgeHealth,
   ForgeMemory,
   ForgeTask,
   WorkspaceSlug,
@@ -40,7 +39,20 @@ const WORKSPACE_LABELS: Record<WorkspaceSlug, string> = {
   "forge-capital": "Forge Capital",
 };
 
-function formatDate(value: string) {
+const QUICK_COMMANDS: Record<WorkspaceSlug, string[]> = {
+  ffs: [
+    "What needs my attention at FFS right now?",
+    "Review my open tasks and give me the best next move.",
+    "Show me what you remember about our current operations.",
+  ],
+  "forge-capital": [
+    "What needs my attention at Forge Capital right now?",
+    "Review my open acquisition tasks and prioritize them.",
+    "What do you remember about our current acquisition strategy?",
+  ],
+};
+
+function formatTime(value: string) {
   return new Intl.DateTimeFormat("en-US", {
     month: "short",
     day: "numeric",
@@ -50,301 +62,309 @@ function formatDate(value: string) {
 }
 
 function ForgeCommand({ workspace }: ForgeCommandProps) {
-  const [command, setCommand] = useState("");
-  const [jobs, setJobs] = useState<ForgeAiJob[]>([]);
+  const [health, setHealth] = useState<ForgeHealth | null>(null);
+  const [conversations, setConversations] = useState<ForgeConversation[]>([]);
+  const [activeConversation, setActiveConversation] =
+    useState<ForgeConversation | null>(null);
   const [tasks, setTasks] = useState<ForgeTask[]>([]);
   const [memory, setMemory] = useState<ForgeMemory[]>([]);
   const [approvals, setApprovals] = useState<ForgeApprovalRequest[]>([]);
-  const [coreStatus, setCoreStatus] = useState("checking");
-  const [providerStatus, setProviderStatus] = useState<ForgeAiProviderStatus | null>(null);
+  const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-
-  const pendingApprovals = useMemo(
-    () => approvals.filter((approval) => approval.status === "PENDING"),
-    [approvals]
-  );
+  const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
   const openTasks = useMemo(
     () => tasks.filter((task) => task.status !== "DONE"),
     [tasks]
   );
-
-  const latestCompletedJob = useMemo(
-    () => jobs.find((job) => job.status === "COMPLETED" && job.result),
-    [jobs]
+  const pendingApprovals = useMemo(
+    () => approvals.filter((approval) => approval.status === "PENDING"),
+    [approvals]
   );
 
-  async function loadForgeData() {
+  async function refreshSidebarData(selectFirst = false) {
+    const [forgeHealth, loadedConversations, loadedTasks, loadedMemory, loadedApprovals] =
+      await Promise.all([
+        getForgeHealth(),
+        getForgeConversations(workspace),
+        getForgeTasks(workspace),
+        getForgeMemory(workspace),
+        getForgeApprovals(workspace),
+      ]);
+
+    setHealth(forgeHealth);
+    setConversations(loadedConversations);
+    setTasks(loadedTasks);
+    setMemory(loadedMemory);
+    setApprovals(loadedApprovals);
+
+    if (selectFirst && loadedConversations.length > 0) {
+      const detail = await getForgeConversation(loadedConversations[0].id);
+      setActiveConversation(detail);
+    }
+  }
+
+  async function loadWorkspace() {
     try {
+      setLoading(true);
       setError("");
-
-      const [health, loadedJobs, loadedTasks, loadedMemory, loadedApprovals] =
-        await Promise.all([
-          getForgeHealth(),
-          getForgeAiJobs(workspace),
-          getForgeTasks(workspace),
-          getForgeMemory(workspace),
-          getForgeApprovals(workspace),
-        ]);
-
-      setCoreStatus(health.status);
-      setProviderStatus(health.aiProvider);
-      setJobs(loadedJobs);
-      setTasks(loadedTasks);
-      setMemory(loadedMemory);
-      setApprovals(loadedApprovals);
+      setActiveConversation(null);
+      await refreshSidebarData(true);
     } catch (loadError) {
       console.error(loadError);
-      setCoreStatus("offline");
-      setProviderStatus(null);
       setError(
         loadError instanceof Error
           ? loadError.message
           : "Could not connect to Forge Command Core."
       );
+    } finally {
+      setLoading(false);
     }
   }
 
   useEffect(() => {
-    loadForgeData();
+    loadWorkspace();
   }, [workspace]);
 
-  async function submitCommand(event: React.FormEvent) {
-    event.preventDefault();
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [activeConversation?.messages?.length, sending]);
 
-    const request = command.trim();
-
-    if (!request || submitting) {
-      return;
-    }
-
+  async function openConversation(id: string) {
     try {
-      setSubmitting(true);
       setError("");
-
-      const queuedJob = await createForgeAiJob(workspace, request);
-      setJobs((currentJobs) => [queuedJob, ...currentJobs]);
-      setCommand("");
-
-      const completedJob = await runForgeAiJob(queuedJob.id);
-      setJobs((currentJobs) =>
-        currentJobs.map((job) =>
-          job.id === completedJob.id ? completedJob : job
-        )
-      );
-    } catch (submitError) {
-      console.error(submitError);
+      setActiveConversation(await getForgeConversation(id));
+    } catch (openError) {
       setError(
-        submitError instanceof Error
-          ? submitError.message
-          : "Forge Executive could not complete the request."
+        openError instanceof Error
+          ? openError.message
+          : "Could not open conversation."
       );
-      await loadForgeData();
-    } finally {
-      setSubmitting(false);
     }
   }
 
+  async function newConversation() {
+    try {
+      setError("");
+      const created = await createForgeConversation(workspace);
+      setActiveConversation({ ...created, messages: [], aiJobs: [] });
+      setConversations((current) => [created, ...current]);
+      setInput("");
+    } catch (createError) {
+      setError(
+        createError instanceof Error
+          ? createError.message
+          : "Could not create conversation."
+      );
+    }
+  }
+
+  async function sendMessage(event?: React.FormEvent) {
+    event?.preventDefault();
+    const content = input.trim();
+    if (!content || sending) return;
+
+    try {
+      setSending(true);
+      setError("");
+
+      let conversation = activeConversation;
+      if (!conversation) {
+        const created = await createForgeConversation(workspace);
+        conversation = { ...created, messages: [], aiJobs: [] };
+        setActiveConversation(conversation);
+      }
+
+      const optimisticId = `local-${Date.now()}`;
+      setActiveConversation((current) =>
+        current
+          ? {
+              ...current,
+              messages: [
+                ...(current.messages || []),
+                {
+                  id: optimisticId,
+                  conversationId: current.id,
+                  role: "user",
+                  content,
+                  metadata: null,
+                  createdAt: new Date().toISOString(),
+                },
+              ],
+            }
+          : current
+      );
+      setInput("");
+
+      await sendForgeConversationMessage(conversation.id, content);
+      const detail = await getForgeConversation(conversation.id);
+      setActiveConversation(detail);
+      await refreshSidebarData(false);
+    } catch (sendError) {
+      console.error(sendError);
+      setError(
+        sendError instanceof Error
+          ? sendError.message
+          : "Forge Executive could not complete that command."
+      );
+      if (activeConversation) {
+        setActiveConversation(await getForgeConversation(activeConversation.id).catch(() => activeConversation));
+      }
+    } finally {
+      setSending(false);
+    }
+  }
+
+  const providerConfigured = health?.aiProvider.configured === true;
+  const messages = activeConversation?.messages || [];
+
   return (
-    <section className="forge-command-page">
-      <div className="forge-command-hero">
+    <section className="forge-command-v2">
+      <header className="forge-command-v2-header">
         <div>
-          <div className="forge-command-kicker">
-            <Sparkles size={16} />
-            <span>Forge Executive</span>
-          </div>
+          <span className="forge-command-brand">
+            <Sparkles size={15} /> FORGE EXECUTIVE
+          </span>
           <h1>What are we working on, boss?</h1>
-          <p>
-            {WORKSPACE_LABELS[workspace]} is active. PhantomSync loads this
-            workspace's durable memory and open tasks before Forge Executive
-            answers.
-          </p>
+          <p>{WORKSPACE_LABELS[workspace]} is the active isolated workspace.</p>
         </div>
 
-        <div className="forge-system-stack">
-          <div className={`forge-core-status ${coreStatus}`}>
-            <span className="status-dot" />
-            <div>
-              <strong>PhantomSync Core</strong>
-              <small>{coreStatus === "healthy" ? "Connected" : coreStatus}</small>
-            </div>
+        <div className="forge-system-pills">
+          <div className={health?.status === "healthy" ? "online" : "offline"}>
+            <span /> PhantomSync
           </div>
-
-          <div
-            className={`forge-core-status ${
-              providerStatus?.configured ? "healthy" : "offline"
-            }`}
-          >
-            <Cpu size={16} />
-            <div>
-              <strong>AI Brain</strong>
-              <small>
-                {providerStatus?.configured
-                  ? providerStatus.model || providerStatus.provider
-                  : "Model not configured"}
-              </small>
-            </div>
+          <div className={providerConfigured ? "online" : "offline"}>
+            <span /> {providerConfigured ? health?.aiProvider.model || "AI Online" : "AI Setup Needed"}
           </div>
         </div>
-      </div>
+      </header>
 
-      {providerStatus && !providerStatus.configured && (
-        <div className="forge-provider-notice">
-          <Cpu size={17} />
+      {!providerConfigured && health?.aiProvider.reason && (
+        <div className="forge-command-notice">
+          <Bot size={18} />
           <div>
-            <strong>Forge Executive is wired but needs a model connection.</strong>
-            <span>{providerStatus.reason}</span>
+            <strong>The Forge Core is online, but its model endpoint is not configured yet.</strong>
+            <span>{health.aiProvider.reason}</span>
           </div>
         </div>
       )}
 
       {error && <div className="forge-command-error">{error}</div>}
 
-      <form className="forge-command-box" onSubmit={submitCommand}>
-        <div className="forge-command-box-topline">
-          <Bot size={18} />
-          <span>Command Forge Executive</span>
-        </div>
-
-        <textarea
-          value={command}
-          onChange={(event) => setCommand(event.target.value)}
-          placeholder={
-            workspace === "ffs"
-              ? "Example: Review FFS operations and tell me what needs my attention."
-              : "Example: Create a due diligence task list for the newest acquisition lead."
-          }
-          rows={4}
-        />
-
-        <div className="forge-command-actions">
-          <div className="forge-command-safety">
-            <ShieldCheck size={16} />
-            <span>Production actions remain approval-gated.</span>
-          </div>
-
-          <button
-            type="submit"
-            disabled={!command.trim() || submitting || !providerStatus?.configured}
-          >
-            {submitting ? <Loader2 className="spin" size={17} /> : <Send size={17} />}
-            {submitting ? "Thinking" : "Run Command"}
-          </button>
-        </div>
-      </form>
-
-      {latestCompletedJob?.result && (
-        <article className="forge-executive-response">
-          <div className="forge-response-heading">
-            <div className="forge-response-avatar">
-              <Bot size={19} />
-            </div>
-            <div>
-              <span>Forge Executive</span>
-              <small>{formatDate(latestCompletedJob.updatedAt)}</small>
-            </div>
-          </div>
-          <div className="forge-response-body">{latestCompletedJob.result}</div>
-        </article>
-      )}
-
-      <div className="forge-stat-grid">
-        <article>
-          <div className="forge-stat-icon"><Activity size={19} /></div>
-          <div>
-            <span>AI Jobs</span>
-            <strong>{jobs.length}</strong>
-          </div>
-        </article>
-
-        <article>
-          <div className="forge-stat-icon"><Clock3 size={19} /></div>
-          <div>
-            <span>Open Tasks</span>
-            <strong>{openTasks.length}</strong>
-          </div>
-        </article>
-
-        <article>
-          <div className="forge-stat-icon"><Brain size={19} /></div>
-          <div>
-            <span>Memory Items</span>
-            <strong>{memory.length}</strong>
-          </div>
-        </article>
-
-        <article>
-          <div className="forge-stat-icon"><CheckCircle2 size={19} /></div>
-          <div>
-            <span>Approvals Waiting</span>
-            <strong>{pendingApprovals.length}</strong>
-          </div>
-        </article>
+      <div className="forge-command-stats">
+        <article><TerminalSquare size={18} /><div><span>Threads</span><strong>{conversations.length}</strong></div></article>
+        <article><Brain size={18} /><div><span>Memory</span><strong>{memory.length}</strong></div></article>
+        <article><CheckCircle2 size={18} /><div><span>Open Tasks</span><strong>{openTasks.length}</strong></div></article>
+        <article><ShieldCheck size={18} /><div><span>Approvals</span><strong>{pendingApprovals.length}</strong></div></article>
       </div>
 
-      <div className="forge-command-columns">
-        <div className="forge-panel forge-jobs-panel">
-          <div className="forge-panel-heading">
-            <div>
-              <span className="forge-panel-kicker">Activity</span>
-              <h3>Recent AI Jobs</h3>
-            </div>
-            <Code2 size={20} />
-          </div>
+      <div className="forge-chat-layout">
+        <aside className="forge-chat-sidebar">
+          <button className="forge-new-thread" onClick={newConversation}>
+            <MessageSquarePlus size={17} /> New Conversation
+          </button>
 
-          <div className="forge-list">
-            {jobs.length === 0 ? (
-              <div className="forge-empty-state">
-                No AI jobs yet. Send the first command above.
-              </div>
+          <div className="forge-thread-list">
+            {loading ? (
+              <div className="forge-thread-empty">Loading conversations...</div>
+            ) : conversations.length === 0 ? (
+              <div className="forge-thread-empty">No conversations yet.</div>
             ) : (
-              jobs.slice(0, 8).map((job) => (
-                <div className="forge-list-item" key={job.id}>
-                  <div className="forge-list-main">
-                    <strong>{job.agent}</strong>
-                    <p>{job.request}</p>
-                    {job.result && job.status === "FAILED" && (
-                      <p className="forge-failed-result">{job.result}</p>
-                    )}
-                    <small>{formatDate(job.createdAt)}</small>
-                  </div>
-                  <span className={`forge-job-status ${job.status.toLowerCase()}`}>
-                    {job.status}
-                  </span>
-                </div>
+              conversations.map((conversation) => (
+                <button
+                  key={conversation.id}
+                  className={activeConversation?.id === conversation.id ? "active" : ""}
+                  onClick={() => openConversation(conversation.id)}
+                >
+                  <strong>{conversation.title}</strong>
+                  <span>{conversation._count?.messages || conversation.messages?.length || 0} messages</span>
+                  <small>{formatTime(conversation.lastMessageAt)}</small>
+                </button>
               ))
             )}
           </div>
-        </div>
+        </aside>
 
-        <div className="forge-panel">
-          <div className="forge-panel-heading">
+        <div className="forge-chat-panel">
+          <div className="forge-chat-titlebar">
             <div>
-              <span className="forge-panel-kicker">Safety</span>
-              <h3>Approval Queue</h3>
+              <span>Private business assistant</span>
+              <strong>{activeConversation?.title || "New Forge Conversation"}</strong>
             </div>
-            <ShieldCheck size={20} />
+            <ShieldCheck size={18} />
           </div>
 
-          <div className="forge-list">
-            {pendingApprovals.length === 0 ? (
-              <div className="forge-empty-state">
-                No protected actions are waiting for approval.
+          <div className="forge-chat-messages">
+            {messages.length === 0 ? (
+              <div className="forge-chat-welcome">
+                <div className="forge-orb"><Bot size={26} /></div>
+                <h2>Forge is ready.</h2>
+                <p>
+                  Ask a normal question, save business memory, create a task,
+                  change an existing app, or tell Forge to build a brand-new one.
+                </p>
+                <div className="forge-quick-commands">
+                  {QUICK_COMMANDS[workspace].map((command) => (
+                    <button key={command} onClick={() => setInput(command)}>{command}</button>
+                  ))}
+                </div>
               </div>
             ) : (
-              pendingApprovals.slice(0, 6).map((approval) => (
-                <div className="forge-list-item" key={approval.id}>
-                  <div className="forge-list-main">
-                    <strong>{approval.title}</strong>
-                    <p>{approval.summary}</p>
-                    <small>{formatDate(approval.createdAt)}</small>
+              messages.map((message) => (
+                <div key={message.id} className={`forge-message ${message.role}`}>
+                  <div className="forge-message-avatar">
+                    {message.role === "assistant" ? <Bot size={16} /> : "EF"}
                   </div>
-                  <span className="forge-job-status pending">PENDING</span>
+                  <div className="forge-message-body">
+                    <div className="forge-message-meta">
+                      <strong>{message.role === "assistant" ? "Forge Executive" : "Boss"}</strong>
+                      <span>{formatTime(message.createdAt)}</span>
+                    </div>
+                    <p>{message.content}</p>
+                  </div>
                 </div>
               ))
             )}
+
+            {sending && (
+              <div className="forge-message assistant thinking">
+                <div className="forge-message-avatar"><Bot size={16} /></div>
+                <div className="forge-message-body">
+                  <div className="forge-message-meta"><strong>Forge Executive</strong></div>
+                  <p><Loader2 className="spin" size={16} /> Working through the request...</p>
+                </div>
+              </div>
+            )}
+            <div ref={messagesEndRef} />
           </div>
+
+          <form className="forge-chat-composer" onSubmit={sendMessage}>
+            <textarea
+              value={input}
+              onChange={(event) => setInput(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" && !event.shiftKey) {
+                  event.preventDefault();
+                  sendMessage();
+                }
+              }}
+              placeholder={
+                workspace === "ffs"
+                  ? "Ask Forge about FFS, or tell it what to build..."
+                  : "Ask Forge about Capital, a deal, or a system to build..."
+              }
+              rows={3}
+            />
+            <div className="forge-composer-footer">
+              <span><ShieldCheck size={14} /> Protected production actions require approval.</span>
+              <button disabled={!input.trim() || sending || !providerConfigured}>
+                {sending ? <Loader2 className="spin" size={17} /> : <Send size={17} />}
+                Send
+              </button>
+            </div>
+          </form>
         </div>
       </div>
     </section>

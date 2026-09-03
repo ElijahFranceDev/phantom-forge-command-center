@@ -5,7 +5,6 @@ import {
   Code2,
   ExternalLink,
   GitBranch,
-  Github,
   Hammer,
   Loader2,
   Plus,
@@ -274,7 +273,7 @@ function ForgeDeveloper({ workspace }: ForgeDeveloperProps) {
 
         <div className="developer-provider-stack">
           <div className={`developer-connection ${githubConfigured ? "connected" : "offline"}`}>
-            <Github size={18} /><div><strong>GitHub</strong><small>{githubConfigured ? "Connected" : "Setup needed"}</small></div>
+            <Code2 size={18} /><div><strong>GitHub</strong><small>{githubConfigured ? "Connected" : "Setup needed"}</small></div>
           </div>
           <div className={`developer-connection ${vercelConfigured ? "connected" : "offline"}`}>
             <Rocket size={18} /><div><strong>Vercel</strong><small>{vercelConfigured ? "Connected" : "Setup needed"}</small></div>
@@ -286,7 +285,7 @@ function ForgeDeveloper({ workspace }: ForgeDeveloperProps) {
       {error && <div className="forge-data-error">{error}</div>}
 
       <div className="developer-tabs">
-        <button className={tab === "projects" ? "active" : ""} onClick={() => setTab("projects")}><Github size={15} /> Projects</button>
+        <button className={tab === "projects" ? "active" : ""} onClick={() => setTab("projects")}><Code2 size={15} /> Projects</button>
         <button className={tab === "runs" ? "active" : ""} onClick={() => setTab("runs")}><GitBranch size={15} /> Build Runs <span>{runs.length}</span></button>
         <button className={tab === "builder" ? "active" : ""} onClick={() => setTab("builder")}><Sparkles size={15} /> Build New App</button>
       </div>
@@ -325,7 +324,7 @@ function ForgeDeveloper({ workspace }: ForgeDeveloperProps) {
             </div>
 
             <div className="forge-data-card developer-inspection-card">
-              <div className="developer-section-heading"><div><span className="forge-panel-kicker">Repository</span><h3>Inspection</h3></div><Github size={18} /></div>
+              <div className="developer-section-heading"><div><span className="forge-panel-kicker">Repository</span><h3>Inspection</h3></div><Code2 size={18} /></div>
               {!inspection ? <div className="forge-data-empty">Select Inspect to read the current repository structure.</div> : (
                 <div className="developer-inspection">
                   <div className="developer-repo-summary"><strong>{inspection.inspection.repository.fullName}</strong><span>{inspection.inspection.repository.language || "Unknown language"}</span><small>{inspection.inspection.repository.private ? "Private" : "Public"} · {inspection.inspection.repository.defaultBranch}</small></div>
@@ -359,7 +358,7 @@ function ForgeDeveloper({ workspace }: ForgeDeveloperProps) {
                       <span>PR <strong>{run.pullRequestNumber ? `#${run.pullRequestNumber}` : "—"}</strong></span>
                       <span>Preview <strong>{preview ? preview.status : "—"}</strong></span>
                     </div>
-                    {(run.pullRequestUrl || preview?.url) && <div className="developer-run-links">{run.pullRequestUrl && <a href={run.pullRequestUrl} target="_blank" rel="noreferrer"><Github size={14} /> Pull Request <ExternalLink size={12} /></a>}{preview?.url && <a href={preview.url} target="_blank" rel="noreferrer"><Rocket size={14} /> Preview <ExternalLink size={12} /></a>}</div>}
+                    {(run.pullRequestUrl || preview?.url) && <div className="developer-run-links">{run.pullRequestUrl && <a href={run.pullRequestUrl} target="_blank" rel="noreferrer"><Code2 size={14} /> Pull Request <ExternalLink size={12} /></a>}{preview?.url && <a href={preview.url} target="_blank" rel="noreferrer"><Rocket size={14} /> Preview <ExternalLink size={12} /></a>}</div>}
                     {run.errorLog && <pre className="developer-error-log">{run.errorLog}</pre>}
                     {(run.fileChanges?.length || 0) > 0 && <div className="developer-change-chips">{run.fileChanges?.slice(0, 12).map((file) => <span key={file.id}>{file.operation} · {file.path}</span>)}</div>}
                   </article>

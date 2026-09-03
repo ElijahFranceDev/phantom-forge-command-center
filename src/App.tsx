@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import Sidebar from "./components/Sidebar";
 import Topbar from "./components/Topbar";
 import Placeholder from "./components/Placeholder";
+import ForgeCommand from "./pages/ForgeCommand";
 import Dashboard from "./pages/Dashboard";
 import Clients from "./pages/Clients";
 import Projects from "./pages/Projects";
@@ -47,11 +48,13 @@ import type {
   RevisionRequest,
   UploadedFile,
   ViewMode,
+  WorkspaceSlug,
 } from "./types";
 
 import "./App.css";
 
 const SELECTED_CLIENT_STORAGE_KEY = "phantom-forge-selected-client-id";
+const FORGE_WORKSPACE_STORAGE_KEY = "forge-command-workspace";
 
 function getUrlClientId() {
   const params = new URLSearchParams(window.location.search);
@@ -68,6 +71,11 @@ function loadSelectedClientId() {
   return localStorage.getItem(SELECTED_CLIENT_STORAGE_KEY) || "1";
 }
 
+function loadWorkspace(): WorkspaceSlug {
+  const savedWorkspace = localStorage.getItem(FORGE_WORKSPACE_STORAGE_KEY);
+  return savedWorkspace === "forge-capital" ? "forge-capital" : "ffs";
+}
+
 function getInitialViewMode(): ViewMode {
   const params = new URLSearchParams(window.location.search);
   const view = params.get("view");
@@ -76,8 +84,9 @@ function getInitialViewMode(): ViewMode {
 }
 
 function App() {
-  const [activePage, setActivePage] = useState<PageName>("Dashboard");
+  const [activePage, setActivePage] = useState<PageName>("Command");
   const [viewMode, setViewMode] = useState<ViewMode>(getInitialViewMode);
+  const [activeWorkspace, setActiveWorkspace] = useState<WorkspaceSlug>(loadWorkspace);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const [clients, setClients] = useState<Client[]>(startingClients);
@@ -140,7 +149,7 @@ function App() {
       }
     } catch (error) {
       console.error(error);
-      setApiError("Could not connect to Phantom Forge API. Using demo data.");
+      setApiError("Could not connect to the legacy portal API. Using demo data.");
       setClients(startingClients);
     } finally {
       setIsLoadingClients(false);
@@ -151,10 +160,8 @@ function App() {
     try {
       const apiRevisionRequests = await getRevisionRequests();
       setRevisionRequests(apiRevisionRequests);
-      setApiError("");
     } catch (error) {
       console.error(error);
-      setApiError("Could not load revision requests from database.");
     }
   }
 
@@ -162,10 +169,8 @@ function App() {
     try {
       const apiApprovals = await getApprovals();
       setApprovals(apiApprovals);
-      setApiError("");
     } catch (error) {
       console.error(error);
-      setApiError("Could not load approvals from database.");
     }
   }
 
@@ -173,10 +178,8 @@ function App() {
     try {
       const apiFiles = await getUploadedFiles();
       setUploadedFiles(apiFiles);
-      setApiError("");
     } catch (error) {
       console.error(error);
-      setApiError("Could not load uploaded files from database.");
     }
   }
 
@@ -191,10 +194,13 @@ function App() {
     localStorage.setItem(SELECTED_CLIENT_STORAGE_KEY, selectedClientId);
   }, [selectedClientId]);
 
+  useEffect(() => {
+    localStorage.setItem(FORGE_WORKSPACE_STORAGE_KEY, activeWorkspace);
+  }, [activeWorkspace]);
+
   async function handleAddClient(newClient: Client) {
     try {
       const savedClient = await createClient(newClient);
-
       setClients((currentClients) => [savedClient, ...currentClients]);
       setSelectedClientId(savedClient.id);
       setApiError("");
@@ -248,18 +254,10 @@ function App() {
   async function handleCreateRevisionRequest(clientId: string, message: string) {
     try {
       const savedRequest = await createRevisionRequest(clientId, message);
-
-      setRevisionRequests((currentRequests) => [
-        savedRequest,
-        ...currentRequests,
-      ]);
-
-      setApiError("");
-
+      setRevisionRequests((currentRequests) => [savedRequest, ...currentRequests]);
       return savedRequest;
     } catch (error) {
       console.error(error);
-      setApiError("Could not save revision request to database.");
       throw error;
     }
   }
@@ -273,44 +271,29 @@ function App() {
           request.id === updatedRequest.id ? updatedRequest : request
         )
       );
-
-      setApiError("");
     } catch (error) {
       console.error(error);
-      setApiError("Could not update revision request.");
     }
   }
 
   async function handleDeleteRevisionRequest(id: string) {
     try {
       await deleteRevisionRequest(id);
-
       setRevisionRequests((currentRequests) =>
         currentRequests.filter((request) => request.id !== id)
       );
-
-      setApiError("");
     } catch (error) {
       console.error(error);
-      setApiError("Could not delete revision request.");
     }
   }
 
   async function handleCreateApproval(clientId: string, label: string) {
     try {
       const savedApproval = await createApproval(clientId, label);
-
-      setApprovals((currentApprovals) => [
-        savedApproval,
-        ...currentApprovals,
-      ]);
-
-      setApiError("");
-
+      setApprovals((currentApprovals) => [savedApproval, ...currentApprovals]);
       return savedApproval;
     } catch (error) {
       console.error(error);
-      setApiError("Could not save approval to database.");
       throw error;
     }
   }
@@ -324,41 +307,30 @@ function App() {
           approval.id === updatedApproval.id ? updatedApproval : approval
         )
       );
-
-      setApiError("");
     } catch (error) {
       console.error(error);
-      setApiError("Could not update approval.");
     }
   }
 
   async function handleDeleteApproval(id: string) {
     try {
       await deleteApproval(id);
-
       setApprovals((currentApprovals) =>
         currentApprovals.filter((approval) => approval.id !== id)
       );
-
-      setApiError("");
     } catch (error) {
       console.error(error);
-      setApiError("Could not delete approval.");
     }
   }
 
   async function handleDeleteUploadedFile(id: string) {
     try {
       await deleteUploadedFile(id);
-
       setUploadedFiles((currentFiles) =>
         currentFiles.filter((file) => file.id !== id)
       );
-
-      setApiError("");
     } catch (error) {
       console.error(error);
-      setApiError("Could not delete uploaded file.");
     }
   }
 
@@ -379,12 +351,16 @@ function App() {
           viewMode={viewMode}
           setViewMode={setViewMode}
           setSidebarOpen={setSidebarOpen}
+          activeWorkspace={activeWorkspace}
+          setActiveWorkspace={setActiveWorkspace}
           isClientOnlyMode={isClientOnlyMode}
         />
 
-        {apiError && <div className="api-alert">{apiError}</div>}
+        {viewMode === "Client" && apiError && (
+          <div className="api-alert">{apiError}</div>
+        )}
 
-        {isLoadingClients && (
+        {viewMode === "Client" && isLoadingClients && (
           <div className="api-alert">Loading project portal...</div>
         )}
 
@@ -400,9 +376,13 @@ function App() {
 
         {viewMode === "Admin" && !isClientOnlyMode && (
           <>
+            {activePage === "Command" && (
+              <ForgeCommand workspace={activeWorkspace} />
+            )}
+
             {activePage === "Dashboard" && (
               <Dashboard clients={clients} approvals={approvals} />
-           )}
+            )}
 
             {activePage === "Clients" && (
               <Clients
@@ -417,7 +397,6 @@ function App() {
             )}
 
             {activePage === "Projects" && <Projects />}
-
             {activePage === "Payments" && <Payments clients={clients} />}
 
             {activePage === "Files" && (
@@ -448,11 +427,22 @@ function App() {
 
             {activePage === "Operations" && <Operations />}
 
+            {activePage === "Developer" && (
+              <Placeholder title="Forge Developer — GitHub + build pipeline next" />
+            )}
+            {activePage === "Tasks" && (
+              <Placeholder title={`${activeWorkspace === "ffs" ? "FFS" : "Forge Capital"} AI Tasks`} />
+            )}
+            {activePage === "Memory" && (
+              <Placeholder title={`${activeWorkspace === "ffs" ? "FFS" : "Forge Capital"} PhantomSync Memory`} />
+            )}
+            {activePage === "Activity" && (
+              <Placeholder title="Forge AI Activity Log" />
+            )}
             {activePage === "Notifications" && (
               <Placeholder title="Notifications" />
             )}
-
-            {activePage === "Settings" && <Placeholder title="Settings" />}
+            {activePage === "Settings" && <Placeholder title="Forge Command Settings" />}
           </>
         )}
       </main>

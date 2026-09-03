@@ -1,0 +1,36 @@
+.forge-workspace-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid rgba(212, 175, 55, 0.18);
+  border-radius: 12px;
+  background: rgba(212, 175, 55, 0.04);
+}
+
+.forge-workspace-switch button {
+  padding: 7px 10px;
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+  background: transparent;
+  color: #8f8f96;
+  font: inherit;
+  font-size: 0.76rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.forge-workspace-switch button.active {
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.24), rgba(169, 133, 31, 0.14));
+  color: #e3c15a;
+  box-shadow: inset 0 0 0 1px rgba(212, 175, 55, 0.22);
+}
+
+@media (max-width: 900px) {
+  .forge-workspace-switch button:last-child {
+    max-width: 42px;
+    overflow: hidden;
+    text-overflow: clip;
+  }
+}

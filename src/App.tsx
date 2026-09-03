@@ -4,6 +4,7 @@ import Sidebar from "./components/Sidebar";
 import Topbar from "./components/Topbar";
 import Placeholder from "./components/Placeholder";
 import ForgeCommand from "./pages/ForgeCommand";
+import ForgeDeveloper from "./pages/ForgeDeveloper";
 import ForgeTasks from "./pages/ForgeTasks";
 import ForgeMemory from "./pages/ForgeMemory";
 import ForgeApprovals from "./pages/ForgeApprovals";
@@ -390,10 +391,7 @@ function App() {
             {activePage === "Tasks" && <ForgeTasks workspace={activeWorkspace} />}
             {activePage === "Memory" && <ForgeMemory workspace={activeWorkspace} />}
             {activePage === "Activity" && <ForgeActivity workspace={activeWorkspace} />}
-
-            {activePage === "Developer" && (
-              <Placeholder title="Forge Developer — GitHub + build pipeline next" />
-            )}
+            {activePage === "Developer" && <ForgeDeveloper workspace={activeWorkspace} />}
             {activePage === "Notifications" && (
               <Placeholder title="Notifications" />
             )}

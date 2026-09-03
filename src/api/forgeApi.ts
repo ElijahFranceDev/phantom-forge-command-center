@@ -1,7 +1,10 @@
 import type {
   ForgeActionRequest,
   ForgeAiJob,
+  ForgeAppBuild,
   ForgeApprovalRequest,
+  ForgeConversation,
+  ForgeDeveloperRun,
   ForgeDeveloperStatus,
   ForgeMemory,
   ForgeRepositoryInspection,
@@ -29,6 +32,7 @@ export type ForgeHealth = {
   version: string;
   capabilities: string[];
   aiProvider: ForgeAiProviderStatus;
+  developer?: ForgeDeveloperStatus;
   timestamp: string;
 };
 
@@ -133,6 +137,33 @@ export function deleteForgeTask(id: string) {
   });
 }
 
+export function getForgeConversations(workspace: WorkspaceSlug) {
+  return apiFetch<ForgeConversation[]>(
+    `/forge/conversations?workspace=${workspace}`
+  );
+}
+
+export function createForgeConversation(workspace: WorkspaceSlug, title?: string) {
+  return apiFetch<ForgeConversation>("/forge/conversations", {
+    method: "POST",
+    body: JSON.stringify({ workspace, title }),
+  });
+}
+
+export function getForgeConversation(id: string) {
+  return apiFetch<ForgeConversation>(`/forge/conversations/${id}`);
+}
+
+export function sendForgeConversationMessage(id: string, content: string) {
+  return apiFetch<{
+    userMessage: unknown;
+    job: ForgeAiJob;
+  }>(`/forge/conversations/${id}/messages`, {
+    method: "POST",
+    body: JSON.stringify({ content }),
+  });
+}
+
 export function getForgeAiJobs(workspace: WorkspaceSlug) {
   return apiFetch<ForgeAiJob[]>(`/forge/ai/jobs?workspace=${workspace}`);
 }
@@ -156,6 +187,13 @@ export function runForgeAiJob(id: string) {
 
 export function getForgeActions(workspace: WorkspaceSlug) {
   return apiFetch<ForgeActionRequest[]>(`/forge/actions?workspace=${workspace}`);
+}
+
+export function executeForgeAction(id: string) {
+  return apiFetch<{ actionId: string; executionDispatched: boolean }>(
+    `/forge/actions/${id}/execute`,
+    { method: "POST" }
+  );
 }
 
 export function getForgeApprovals(workspace: WorkspaceSlug) {
@@ -230,4 +268,58 @@ export function prepareCodeChange(
       body: JSON.stringify(input),
     }
   );
+}
+
+export function getForgeDeveloperRuns(workspace: WorkspaceSlug) {
+  return apiFetch<ForgeDeveloperRun[]>(
+    `/forge/developer/runs?workspace=${workspace}`
+  );
+}
+
+export function getForgeDeveloperRun(id: string) {
+  return apiFetch<ForgeDeveloperRun>(`/forge/developer/runs/${id}`);
+}
+
+export function refreshForgeDeveloperRun(id: string, autoRepair = true) {
+  return apiFetch<ForgeDeveloperRun>(`/forge/developer/runs/${id}/refresh`, {
+    method: "POST",
+    body: JSON.stringify({ autoRepair }),
+  });
+}
+
+export function requestForgeProductionRelease(
+  id: string,
+  deploymentId?: string
+) {
+  return apiFetch<ForgeActionRequest>(
+    `/forge/developer/runs/${id}/production-request`,
+    {
+      method: "POST",
+      body: JSON.stringify({ deploymentId }),
+    }
+  );
+}
+
+export function getForgeAppBuilds(workspace: WorkspaceSlug) {
+  return apiFetch<ForgeAppBuild[]>(
+    `/forge/developer/app-builds?workspace=${workspace}`
+  );
+}
+
+export function createForgeAppBuild(
+  workspace: WorkspaceSlug,
+  input: {
+    name: string;
+    prompt: string;
+    repositoryName?: string;
+    private?: boolean;
+  }
+) {
+  return apiFetch<{
+    appBuild: ForgeAppBuild;
+    action: ForgeActionRequest;
+  }>("/forge/developer/app-builds", {
+    method: "POST",
+    body: JSON.stringify({ workspace, ...input }),
+  });
 }

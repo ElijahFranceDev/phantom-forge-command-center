@@ -1,0 +1,244 @@
+.forge-developer-page {
+  position: relative;
+}
+
+.developer-connection {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 160px;
+  padding: 11px 13px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  color: #8b8b93;
+}
+
+.developer-connection.connected {
+  border-color: rgba(53, 208, 127, 0.2);
+  color: #55d58f;
+}
+
+.developer-connection.offline {
+  border-color: rgba(227, 91, 91, 0.16);
+  color: #d98484;
+}
+
+.developer-connection strong,
+.developer-connection small {
+  display: block;
+}
+
+.developer-connection strong {
+  color: #ebe7dd;
+  font-size: 0.84rem;
+}
+
+.developer-connection small {
+  margin-top: 2px;
+  color: #7d7d85;
+}
+
+.developer-register-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr) auto;
+  gap: 12px;
+  align-items: end;
+  padding: 16px;
+}
+
+.developer-register-form label {
+  display: block;
+  margin-bottom: 6px;
+  color: #777780;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.developer-register-form input,
+.developer-change-modal input,
+.developer-change-modal textarea {
+  width: 100%;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  outline: none;
+  background: #08080a;
+  color: #eeeadf;
+  font: inherit;
+}
+
+.developer-register-form input,
+.developer-change-modal input {
+  padding: 11px 12px;
+}
+
+.developer-change-modal textarea {
+  padding: 13px;
+  resize: vertical;
+}
+
+.developer-register-form input:focus,
+.developer-change-modal input:focus,
+.developer-change-modal textarea:focus {
+  border-color: rgba(212, 175, 55, 0.48);
+}
+
+.developer-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(340px, 0.8fr);
+  gap: 16px;
+}
+
+.developer-section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 18px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.055);
+  color: #d4af37;
+}
+
+.developer-section-heading h3 {
+  margin: 3px 0 0;
+  color: #eee9df;
+  font-size: 0.98rem;
+}
+
+.developer-project-row strong {
+  display: block;
+  margin-top: 7px;
+}
+
+.developer-inspection-card {
+  min-height: 280px;
+}
+
+.developer-inspection {
+  padding: 18px;
+}
+
+.developer-repo-summary strong,
+.developer-repo-summary span,
+.developer-repo-summary small {
+  display: block;
+}
+
+.developer-repo-summary strong {
+  color: #eee9df;
+}
+
+.developer-repo-summary span {
+  margin-top: 5px;
+  color: #d4af37;
+  font-size: 0.78rem;
+}
+
+.developer-repo-summary small {
+  margin-top: 4px;
+  color: #777780;
+}
+
+.developer-file-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.developer-file-grid > div {
+  padding: 11px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.developer-file-grid strong,
+.developer-file-grid small {
+  display: block;
+}
+
+.developer-file-grid strong {
+  overflow: hidden;
+  color: #cfcac0;
+  font-size: 0.78rem;
+  text-overflow: ellipsis;
+}
+
+.developer-file-grid small {
+  margin-top: 3px;
+  color: #64646c;
+  font-size: 0.67rem;
+}
+
+.developer-production-line {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.055);
+  color: #86868e;
+  font-size: 0.78rem;
+  word-break: break-all;
+}
+
+.developer-change-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(7px);
+}
+
+.developer-change-modal {
+  width: min(620px, 100%);
+  overflow: hidden;
+  border: 1px solid rgba(212, 175, 55, 0.23);
+  border-radius: 18px;
+  background: #0c0c0f;
+  box-shadow: 0 28px 90px rgba(0, 0, 0, 0.6);
+}
+
+.developer-change-modal > p,
+.developer-change-modal > input,
+.developer-change-modal > textarea {
+  margin-left: 18px;
+  margin-right: 18px;
+}
+
+.developer-change-modal > p {
+  color: #8c8c94;
+}
+
+.developer-change-modal > input,
+.developer-change-modal > textarea {
+  width: calc(100% - 36px);
+  margin-bottom: 10px;
+}
+
+.developer-change-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 9px;
+  padding: 16px 18px 18px;
+}
+
+@media (max-width: 980px) {
+  .developer-register-form,
+  .developer-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .developer-file-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .developer-change-actions {
+    flex-direction: column-reverse;
+  }
+}

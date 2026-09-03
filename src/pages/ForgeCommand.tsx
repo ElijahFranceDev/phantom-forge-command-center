@@ -20,10 +20,10 @@ import {
   getForgeTasks,
   sendForgeConversationMessage,
 } from "../api/forgeApi";
+import type { ForgeHealth } from "../api/forgeApi";
 import type {
   ForgeApprovalRequest,
   ForgeConversation,
-  ForgeHealth,
   ForgeMemory,
   ForgeTask,
   WorkspaceSlug,

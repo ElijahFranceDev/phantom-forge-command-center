@@ -12,6 +12,23 @@ const API_URL =
   import.meta.env.VITE_API_URL ||
   "https://phantom-forge-command-center-api.onrender.com/api";
 
+export type ForgeAiProviderStatus = {
+  configured: boolean;
+  provider: string;
+  model: string | null;
+  baseUrl: string | null;
+  reason?: string;
+};
+
+export type ForgeHealth = {
+  status: string;
+  service: string;
+  version: string;
+  capabilities: string[];
+  aiProvider: ForgeAiProviderStatus;
+  timestamp: string;
+};
+
 async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
   const response = await fetch(`${API_URL}${path}`, {
     ...options,
@@ -30,13 +47,7 @@ async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
 }
 
 export function getForgeHealth() {
-  return apiFetch<{
-    status: string;
-    service: string;
-    version: string;
-    capabilities: string[];
-    timestamp: string;
-  }>("/forge/health");
+  return apiFetch<ForgeHealth>("/forge/health");
 }
 
 export function getForgeWorkspaces() {
@@ -131,6 +142,12 @@ export function createForgeAiJob(
   return apiFetch<ForgeAiJob>("/forge/ai/jobs", {
     method: "POST",
     body: JSON.stringify({ workspace, request, agent }),
+  });
+}
+
+export function runForgeAiJob(id: string) {
+  return apiFetch<ForgeAiJob>(`/forge/ai/jobs/${id}/run`, {
+    method: "POST",
   });
 }
 
